@@ -1,0 +1,4 @@
+--help
+redis.conf
+logs/*
+.env

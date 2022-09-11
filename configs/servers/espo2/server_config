@@ -1,0 +1,1 @@
+add_header Set-Cookie "espo=s2; path=/; Max-Age=2147483647";
