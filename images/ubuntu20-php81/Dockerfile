@@ -57,6 +57,7 @@ RUN sed -i -E 's/max_execution_time = 30/max_execution_time = 3600/' /etc/php/8.
 ENV INSTANT_CLIENT=/usr/lib/oracle/instantclient_21_8
 RUN mkdir -p /usr/lib/oracle
 
+# Tai source PHP theo version da cai dat
 RUN cd /opt \
     && PHP_VERSION=$(php -v | grep -Po '(?<=PHP\s)[\d.]+') \
     && BRANCH="PHP-${PHP_VERSION}" \
@@ -64,32 +65,36 @@ RUN cd /opt \
     && cd php-src \
     && git checkout ${BRANCH}
 
+# Tai instant client va sdk
 RUN cd /opt \
     && curl https://download.oracle.com/otn_software/linux/instantclient/218000/instantclient-basic-linux.x64-21.8.0.0.0dbru.zip -O \
     && curl https://download.oracle.com/otn_software/linux/instantclient/218000/instantclient-sdk-linux.x64-21.8.0.0.0dbru.zip -O 
 
+# Giai nen va move vao thu muc dinh san
 RUN cd /opt \
     && yes | unzip instantclient-basic-linux.x64-21.8.0.0.0dbru.zip \
     && yes | unzip instantclient-sdk-linux.x64-21.8.0.0.0dbru.zip \
     && mv instantclient_21_8 ${INSTANT_CLIENT}
 
+# Thiet lap path de build system co the tim kiem header file khi complie php extendsion
 RUN echo ${INSTANT_CLIENT} > /etc/ld.so.conf.d/oracle.conf
 RUN ldconfig
 
-RUN ls -al /opt
-RUN ls /usr/lib/oracle/instantclient_21_8
+# complie oci8
 RUN cd /opt/php-src/ext/oci8 \
     && phpize \
     && ./configure --with-php-config=/usr/bin/php-config --with-oci8=instantclient,${INSTANT_CLIENT} \
     && make \
     && make install
 
+# complie pdo_oci
 RUN cd /opt/php-src/ext/pdo_oci \
     && phpize \
     &&./configure --with-php-config=/usr/bin/php-config --with-pdo-oci=instantclient,${INSTANT_CLIENT} \
     && make \
     && make install
 
+# Khai bao module cho php
 RUN echo "extension=pdo_oci.so" > /etc/php/8.1/fpm/conf.d/10-pdo_oci.ini
 RUN echo "extension=oci8.so" > /etc/php/8.1/fpm/conf.d/10-oci8.ini
 RUN echo "extension=pdo_oci.so" > /etc/php/8.1/cli/conf.d/10-pdo_oci.ini
